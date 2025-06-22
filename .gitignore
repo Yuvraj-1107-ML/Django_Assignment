@@ -1,0 +1,15 @@
+#  cached files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+
+
+# Django database 
+*.sqlite3
+*.db
+
+# Secrets & environment variables
+.env
+.env.*
