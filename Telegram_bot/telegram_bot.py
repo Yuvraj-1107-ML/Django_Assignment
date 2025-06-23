@@ -1,50 +1,48 @@
 import os
 import django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Core.settings')  
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Core.settings')
 django.setup()
 
-import requests
 from django.contrib.auth.models import User
 from myapp.models import TelegramUser
 from decouple import config
 
+from telegram import Update
+from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 
-BOT_TOKEN = config('TELEGRAM_BOT_TOKEN')
-URL = f"https://api.telegram.org/bot{BOT_TOKEN}/"
 
-#  Function to handle a single update message
-def handle_update(update):
-    message = update.get('message', {})
-    chat_id = message['chat']['id']
-    username = message['from'].get('username', '')
 
-    # Link to the first user (for demo)
+API_KEY = config('TELEGRAM_BOT_TOKEN')
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    username = update.effective_user.username
+    chat_id = update.effective_chat.id
+
+
     user = User.objects.first()
     if user:
-        TelegramUser.objects.update_or_create(
+        TelegramUser.objects.update_or_create (
             user=user,
             defaults={'telegram_username': username}
         )
         reply = f"Thanks @{username}! Your Telegram username has been saved."
     else:
-        reply = " No Django user found to link this Telegram username."
+        reply = " No Django user found to link."
 
-    requests.post(URL + "sendMessage", data={
-        "chat_id": chat_id,
-        "text": reply
-    })
+    await context.bot.send_message(chat_id=chat_id, text=reply)
 
-#  simple polling loop to test
-def run_bot():
-    offset = None
-    print("Bot is running... Press CTRL+C to stop.")
 
-    while True:
-        updates = requests.get(URL + "getUpdates", params={"timeout": 100, "offset": offset}).json()
-        for update in updates.get("result", []):
-            handle_update(update)
-            offset = update["update_id"] + 1
+def main():
+    
+    app = ApplicationBuilder().token(API_KEY).build()
 
+   
+    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
+
+    print("Telegram bot is running")
+    
+    app.run_polling()
 
 if __name__ == '__main__':
-    run_bot()
+             main()
