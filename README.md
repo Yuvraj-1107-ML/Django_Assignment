@@ -108,7 +108,7 @@ celery -A Core worker --loglevel=info
 In a **new terminal**, with the virtual environment activated:
 
 ```bash
-python telegram_bot/telegram_bot.py
+python telegram_bot.py
 ```
 
 
